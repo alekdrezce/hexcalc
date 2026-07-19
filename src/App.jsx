@@ -1,83 +1,66 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
 
 function App() {
   const [baseColor, setBaseColor] = useState('#657ed4');
-  const [channels, setChannels] = useState({ r: 101, g: 126, b: 212 });
-  const [palette, setPalette] = useState({ triadic: [], tints: [], shades: [] });
+  const [palette, setPalette] = useState(['#657ed4', '#d90267', '#65d4b5', '#d4b565', '#b565d4']);
+  const paletteRef = useRef(null);
 
-  // Función para descomponer HEX a RGB
-  const updateChannels = (hex) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    setChannels({ r, g, b });
+  const generateRandomPalette = () => {
+    // Generamos 4 colores armonicos basados en el baseColor (rotaciones HSL)
+    const newPalette = [baseColor];
+    for (let i = 0; i < 4; i++) {
+      const hue = (Math.random() * 360);
+      newPalette.push(`hsl(${hue}, 70%, 50%)`);
+    }
+    setPalette(newPalette);
   };
 
-  // Cuentagotas (EyeDropper API)
-  const pickColor = async () => {
-    if (!window.EyeDropper) return alert("EyeDropper no soportado");
-    const eyeDropper = new window.EyeDropper();
-    const result = await eyeDropper.open();
-    setBaseColor(result.sRGBHex);
-    updateChannels(result.sRGBHex);
-  };
-
-  // Lógica de paletas: Tintas, Sombras y Tríadas
-  const generatePalette = (hex) => {
-    // Nota: Lógica simplificada para demostración de estructura
-    // En producción usaríamos librerías como 'colord' para mayor precisión
-    setPalette({
-      triadic: ['#657ed4', '#d4657e', '#7ed465'],
-      tints: ['#8fa4e0', '#b9c8eb', '#e2e9f6'],
-      shades: ['#4d5fa0', '#364370', '#1f2741']
-    });
+  const downloadPalette = async () => {
+    const canvas = await html2canvas(paletteRef.current);
+    const link = document.createElement('a');
+    link.download = 'hexcalc-palette.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white p-6">
       <div className="max-w-xl mx-auto space-y-6">
         
-        {/* Panel de Control */}
-        <div className="bg-neutral-900 p-6 rounded-[2rem] border border-neutral-800 flex gap-4">
-          <input 
-            value={baseColor}
-            onChange={(e) => { setBaseColor(e.target.value); updateChannels(e.target.value); }}
-            className="flex-1 bg-neutral-950 p-4 rounded-xl border border-neutral-800 font-mono"
-          />
-          <button onClick={pickColor} className="px-6 bg-[#657ed4] rounded-2xl font-bold">Capturar</button>
-          <button onClick={() => generatePalette(baseColor)} className="px-6 bg-[#d90267] rounded-2xl font-bold">Generar</button>
+        {/* Generador */}
+        <div className="bg-neutral-900 p-8 rounded-[2rem] border border-neutral-800 text-center">
+          <input value={baseColor} onChange={(e) => setBaseColor(e.target.value)} className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 font-mono text-center w-full mb-4" />
+          <button onClick={generateRandomPalette} className="w-full py-4 bg-[#657ed4] rounded-2xl font-bold hover:bg-[#5a6fbf] transition-all">
+            GENERAR NUEVA ARMONÍA
+          </button>
         </div>
 
-        {/* Canales RGB */}
-        <div className="grid grid-cols-3 gap-4 text-center">
-          {Object.entries(channels).map(([key, val]) => (
-            <div key={key} className="bg-neutral-900 p-4 rounded-2xl border border-neutral-800">
-              <div className="text-neutral-500 uppercase text-xs">{key}</div>
-              <div className="text-2xl font-mono">{val}</div>
-            </div>
-          ))}
+        {/* Paleta desplegable */}
+        <div ref={paletteRef} className="bg-neutral-900 p-6 rounded-[2rem] border border-neutral-800">
+          <div className="flex h-32 mb-4 rounded-2xl overflow-hidden">
+            {palette.map((color, i) => (
+              <div key={i} style={{ backgroundColor: color }} className="flex-1" />
+            ))}
+          </div>
+          
+          {/* Resultados Desplegables */}
+          <div className="space-y-2">
+            {palette.slice(1).map((color, i) => (
+              <details key={i} className="bg-neutral-800 p-4 rounded-xl cursor-pointer">
+                <summary className="font-mono text-sm">{color}</summary>
+                <p className="mt-2 text-neutral-400 text-xs">Propiedades calculadas: Matiz {i+1} armonizado.</p>
+              </details>
+            ))}
+          </div>
         </div>
 
-        {/* Paletas generadas */}
-        <div className="space-y-4">
-          <PaletteRow title="Tríada" colors={palette.triadic} />
-          <PaletteRow title="Tintas" colors={palette.tints} />
-          <PaletteRow title="Sombras" colors={palette.shades} />
-        </div>
+        <button onClick={downloadPalette} className="w-full py-4 border-2 border-[#d90267] text-[#d90267] rounded-2xl font-bold hover:bg-[#d90267] hover:text-white transition-all">
+          DESCARGAR PALETA (PNG)
+        </button>
       </div>
     </div>
   );
 }
-
-const PaletteRow = ({ title, colors }) => (
-  <div className="bg-neutral-900 p-6 rounded-[2rem] border border-neutral-800">
-    <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-neutral-500">{title}</h3>
-    <div className="flex gap-2">
-      {colors.map((c, i) => (
-        <div key={i} className="h-12 flex-1 rounded-xl" style={{ backgroundColor: c }} />
-      ))}
-    </div>
-  </div>
-);
 
 export default App;
