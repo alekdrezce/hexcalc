@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   // Base en '/' para evitar conflictos de ruteo durante el desarrollo
-  base: '/',
+  base: '/hexcalc/',
   plugins: [
     react(),
     tailwindcss(),
